@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N O T H I N G</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000;
+            color: #39FF14;
+            margin: 0;
+            padding-bottom: 50px;
+            /* Space for the fixed ticker */
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Press Start 2P', Courier, monospace;
+            text-align: center;
+            overflow: hidden;
+            cursor: default;
+            text-shadow: 0 0 10px #39FF14, 0 0 5px #39FF14;
+            /* Subtle overall glow */
+        }
+
+        #message {
+            font-size: 1.1em;
+            padding: 20px;
+            line-height: 1.8;
+            border: 2px solid #39FF14;
+            box-shadow: 0 0 100px #37ff1479 inset, 0 0 15px #39FF14;
+            /* User's updated shadow */
+            background-color: rgba(0, 20, 0, 0.3);
+            margin-bottom: 20px;
+            max-width: 80%;
+            /* Ensure some space for messages */
+        }
+
+        #highScoreDisplay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 0.7em;
+            color: #2AAE0A;
+            text-shadow: 0 0 3px #2AAE0A;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border: 1px solid #2AAE0A;
+        }
+
+        .button-controls button {
+            display: none;
+            margin: 10px 8px 0 8px;
+            padding: 10px 15px;
+            font-size: 0.8em;
+            font-family: 'Press Start 2P', Courier, monospace;
+            background-color: #111111;
+            color: #39FF14;
+            border: 2px solid #39FF14;
+            cursor: pointer;
+            border-radius: 0;
+            text-shadow: 0 0 5px #39FF14;
+            transition: background-color 0.1s, color 0.1s;
+        }
+
+        .button-controls button:hover,
+        .button-controls button:focus {
+            background-color: #39FF14;
+            color: #000000;
+            text-shadow: 0 0 5px #000000;
+            outline: none;
+        }
+
+        .extra-links {
+            position: absolute;
+            bottom: 0;
+            margin-top: 15px;
+            margin-bottom: 35px;
+        }
+
+        .permanent-button {
+            display: inline-block !important;
+            margin: 5px 8px;
+            padding: 10px 15px;
+            font-size: 0.8em;
+            font-family: 'Press Start 2P', Courier, monospace;
+            background-color: #1a1a1a;
+            /* Slightly different bg */
+            color: #39FF14;
+            border: 2px solid #39FF14;
+            cursor: pointer;
+            border-radius: 0;
+            text-shadow: 0 0 5px #39FF14;
+            transition: background-color 0.1s, color 0.1s;
+            text-decoration: none;
+        }
+
+        .permanent-button:hover,
+        .permanent-button:focus {
+            background-color: #39FF14;
+            color: #000000;
+            text-shadow: 0 0 5px #000000;
+            outline: none;
+        }
+
+
+        strong,
+        .new-record-text {
+            color: #FFBF00;
+            /* Amber/Gold for highlight */
+            text-shadow: 0 0 5px #FFBF00, 0 0 10px #FFBF00;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        #caTickerContainer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #050505;
+            /* Very dark */
+            padding: 7px 0;
+            overflow: hidden;
+            border-top: 2px solid #222;
+            z-index: 100;
+            font-size: 0.65em;
+            color: #2AAE0A;
+            /* Dimmer green for CA */
+            text-shadow: 0 0 3px #2AAE0A;
+        }
+
+        #caTickerAnimationWrapper {
+            display: inline-block;
+            white-space: nowrap;
+            animation: ticker-slide 35s linear infinite;
+            cursor: pointer;
+        }
+
+        #caTickerAnimationWrapper:hover {
+            color: #39FF14;
+            /* Brighter on hover */
+            text-shadow: 0 0 5px #39FF14;
+        }
+
+        #caTickerAnimationWrapper span {
+            /* The actual text spans */
+            padding-right: 60px;
+            /* Space between repetitions */
+        }
+
+        @keyframes ticker-slide {
+            0% {
+                transform: translateX(0%);
+            }
+
+            100% {
+                transform: translateX(-50%);
+                /* Assumes two identical child spans */
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+    <!-- Audio element for losing sound -->
+    <audio id="loseSound" preload="auto">
+        <!-- Simple descending tones for "game over" feel -->
+        <source src="#" type="audio/wav">
+    </audio>
+
+    <div id="highScoreDisplay"></div>
+    <div id="message">PRESS ANY KEY TO START DOING NOTHING.</div>
+
+    <div class="extra-links">
+        <a href="https://store.steampowered.com/app/2696480/Nothing/" target="_blank" id="steamButton"
+            class="permanent-button">[ DOWNLOAD NOTHING FROM STEAM ]</a>
+    </div>
+
+    <div class="button-controls">
+        <button id="retryButton">[ RETRY ]</button>
+        <button id="shareScoreButton">[ SAVE IMG ]</button>
+    </div>
+
+    <div id="caTickerContainer">
+        <div id="caTickerAnimationWrapper" title="Click to copy CA">
+            <!-- Content dynamically set by JS -->
+        </div>
+    </div>
+
+    <script>
+        const messageElement = document.getElementById('message');
+        const retryButton = document.getElementById('retryButton');
+        const shareScoreButton = document.getElementById('shareScoreButton');
+        const highScoreDisplayElement = document.getElementById('highScoreDisplay');
+        const loseSoundElement = document.getElementById('loseSound');
+        const caTickerWrapper = document.getElementById('caTickerAnimationWrapper');
+
+        const contractAddress = "0x12345ExampleContractAddress0000NONE"; // Replace with actual CA
+        const caDisplayPrefix = "CA: ";
+        const caSeparator = "  //  ";
+        let originalTickerHtml = '';
+
+        let timerInterval = null;
+        let startTime = null;
+        let gameActive = false;
+        let lost = false;
+        let currentScoreInSeconds = 0;
+
+        const initialMessage = "PRESS ANY KEY TO START DOING NOTHING.";
+        const highScoreKey = 'nothingGameHighScoreSeconds_retro_v2'; // Updated key for new features
+
+        // --- CA Ticker Setup ---
+        function setupTickerText() {
+            const fullCAText = caDisplayPrefix + contractAddress + caSeparator;
+            originalTickerHtml = `<span>${fullCAText}</span><span>${fullCAText}</span><span>${fullCAText}</span><span>${fullCAText}</span><span>${fullCAText}</span><span>${fullCAText}</span><span>${fullCAText}</span><span>${fullCAText}</span><span>${fullCAText}</span><span>${fullCAText}</span>`;
+            caTickerWrapper.innerHTML = originalTickerHtml;
+        }
+
+        caTickerWrapper.addEventListener('click', () => {
+            navigator.clipboard.writeText(contractAddress).then(() => {
+                const copiedText = "COPIED TO CLIPBOARD!" + caSeparator;
+                caTickerWrapper.innerHTML = `<span>${copiedText}</span>`;
+                caTickerWrapper.style.animationPlayState = 'paused';
+                setTimeout(() => {
+                    caTickerWrapper.innerHTML = originalTickerHtml;
+                    caTickerWrapper.style.animationPlayState = 'running';
+                }, 2500);
+            }).catch(err => {
+                console.error('Failed to copy CA: ', err);
+                const failedText = "COPY FAILED! (CHECK CONSOLE)" + caSeparator;
+                caTickerWrapper.innerHTML = `<span>${failedText}</span><span>${failedText}</span>`;
+                caTickerWrapper.style.animationPlayState = 'paused';
+                setTimeout(() => {
+                    caTickerWrapper.innerHTML = originalTickerHtml;
+                    caTickerWrapper.style.animationPlayState = 'running';
+                }, 2500);
+            });
+        });
+
+        // --- Time Formatting ---
+        function formatTime(totalSeconds) {
+            if (totalSeconds < 0) totalSeconds = 0;
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            let parts = [];
+            if (hours > 0) parts.push(`${hours}h`);
+            if (minutes > 0) parts.push(`${minutes}m`);
+            if (seconds > 0 || (hours === 0 && minutes === 0)) {
+                parts.push(`${seconds}s`);
+            } else if (hours > 0 || minutes > 0) {
+                parts.push(`0s`);
+            }
+            if (parts.length === 0) return "0s";
+            return parts.join(' ');
+        }
+
+        // --- High Score Management ---
+        function getHighScore() {
+            const score = parseInt(localStorage.getItem(highScoreKey), 10);
+            return isNaN(score) ? 0 : score;
+        }
+        function setHighScore(newScoreSeconds) {
+            localStorage.setItem(highScoreKey, newScoreSeconds.toString());
+        }
+        function displayCurrentHighScore() {
+            const highScore = getHighScore();
+            if (highScore > 0) {
+                highScoreDisplayElement.textContent = `BEST: ${formatTime(highScore)}`;
+            } else {
+                highScoreDisplayElement.textContent = `NO RECORD SET... YET!`;
+            }
+            highScoreDisplayElement.classList.remove('new-record-text'); // Ensure it's not amber by default
+        }
+
+        // --- Game Logic ---
+        function updateTimerDisplay() {
+            if (!lost && gameActive) {
+                const secondsElapsed = Math.floor((Date.now() - startTime) / 1000);
+                messageElement.textContent = `YOU HAVE BEEN DOING NOTHING FOR ${formatTime(secondsElapsed)}`;
+            }
+        }
+
+        function startGame() {
+            if (gameActive || lost) return;
+            gameActive = true;
+            lost = false;
+            startTime = Date.now();
+            currentScoreInSeconds = 0;
+            messageElement.textContent = `YOU HAVE BEEN DOING NOTHING FOR 0s`;
+            retryButton.style.display = 'none';
+            shareScoreButton.style.display = 'none';
+            displayCurrentHighScore(); // Resets high score display style
+
+            timerInterval = setInterval(updateTimerDisplay, 1000);
+            window.addEventListener('mousemove', handleActivity);
+            window.addEventListener('mousedown', handleActivity);
+            window.addEventListener('touchstart', handleActivity);
+        }
+
+        function handleActivity(event) {
+            if (!gameActive || lost) return;
+            lost = true;
+            gameActive = false;
+            clearInterval(timerInterval);
+
+            // Play lose sound
+            if (loseSoundElement) {
+                loseSoundElement.currentTime = 0; // Rewind
+                loseSoundElement.play().catch(error => console.warn("Audio play failed. User interaction might be needed first or audio disabled.", error));
+            }
+
+            currentScoreInSeconds = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+            const formattedFinalScore = formatTime(currentScoreInSeconds);
+            let lossMessageText = `YOU DID SOMETHING. YOU LOST. <br>YOU HAVE BEEN DOING NOTHING FOR: ${formattedFinalScore}.`;
+            let oldHighScore = getHighScore();
+            let isNewRecord = currentScoreInSeconds > oldHighScore;
+
+            if (isNewRecord && currentScoreInSeconds > 0) {
+                setHighScore(currentScoreInSeconds);
+                lossMessageText += `<br><span class="new-record-text">* * * NEW RECORD! * * *</span>`;
+                highScoreDisplayElement.innerHTML = `NEW BEST: <span class="new-record-text">${formatTime(currentScoreInSeconds)}</span>`;
+            } else {
+                // lossMessageText += `<br>CURRENT RECORD: ${formatTime(oldHighScore)}`;
+                // displayCurrentHighScore() is called in resetGame or startGame, covers this
+            }
+
+            messageElement.innerHTML = lossMessageText;
+            retryButton.style.display = 'inline-block';
+            shareScoreButton.style.display = 'inline-block';
+
+            window.removeEventListener('mousemove', handleActivity);
+            window.removeEventListener('mousedown', handleActivity);
+            window.removeEventListener('touchstart', handleActivity);
+        }
+
+        function handleKeyPress(event) {
+            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            if (event.key.startsWith("F") && event.key.length > 1 && !isNaN(event.key.substring(1))) return;
+            if (["Tab", "Escape", "Shift", "Control", "Alt", "Meta", "CapsLock", "ContextMenu", "ScrollLock", "Pause", "Insert", "Home", "PageUp", "Delete", "End", "PageDown"].includes(event.key)) return;
+
+            if (!gameActive && !lost) {
+                startGame();
+            } else if (gameActive && !lost) {
+                handleActivity();
+            }
+        }
+
+        function resetGame() {
+            lost = false;
+            gameActive = false;
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            startTime = null;
+            currentScoreInSeconds = 0;
+            messageElement.textContent = initialMessage;
+            retryButton.style.display = 'none';
+            shareScoreButton.style.display = 'none';
+            displayCurrentHighScore(); // Update and reset style of high score display
+            window.removeEventListener('mousemove', handleActivity);
+            window.removeEventListener('mousedown', handleActivity);
+            window.removeEventListener('touchstart', handleActivity);
+        }
+
+        // --- Score Image Generation (Retro Style) ---
+        function generateScoreImage() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const scoreForImage = currentScoreInSeconds;
+            const recordForImage = getHighScore();
+            const isNewRecordForImage = (scoreForImage === recordForImage && scoreForImage > 0);
+            const fontName = "'Press Start 2P', Courier, monospace";
+            const primaryColor = "#39FF14";
+            const highlightColor = "#FFBF00";
+            const bgColor = "#000000";
+            const siteName = "nothingcoin.fun"; // As per user's previous code
+
+            const textLines = [
+                { text: "NOTHING $NONE", size: 18, color: primaryColor, weight: 'normal' },
+                { text: siteName, size: 12, color: primaryColor, weight: 'normal', yOffset: -5 },
+                { text: "--------------------", size: 10, color: primaryColor, weight: 'normal', yOffset: 0 },
+                { text: "TIME ELAPSED:", size: 14, color: primaryColor, weight: 'normal', yOffset: 5 },
+                { text: formatTime(scoreForImage), size: 16, color: highlightColor, weight: 'bold', yOffset: -2 },
+            ];
+            if (isNewRecordForImage) {
+                textLines.push({ text: "* * NEW RECORD * *", size: 14, color: highlightColor, weight: 'bold', yOffset: 5 });
+            } else {
+                textLines.push({ text: "", size: 14, color: highlightColor, weight: 'bold', yOffset: 5 });
+            }
+            textLines.push({ text: "ALL-TIME BEST:", size: 12, color: primaryColor, weight: 'normal', yOffset: 5 });
+            textLines.push({ text: formatTime(recordForImage), size: 14, color: primaryColor, weight: 'bold', yOffset: -2 });
+            // textLines.push({ text: `CA: ${contractAddress.substring(0, 10)}...`, size: 9, color: "#aaa", weight: 'normal', yOffset: 5 });
+            textLines.push({ text: "--------------------", size: 10, color: primaryColor, weight: 'normal', yOffset: -2 });
+
+            const padding = 20;
+            const lineHeightBase = 1.2;
+            let canvasWidth = 350; // Adjusted min width
+            let currentY = padding;
+
+            textLines.forEach(line => {
+                ctx.font = `${line.weight || 'normal'} ${line.size}px ${fontName}`;
+                canvasWidth = Math.max(canvasWidth, ctx.measureText(line.text).width + 2 * padding);
+                currentY += (line.size * lineHeightBase) + (line.yOffset || 0);
+            });
+            canvas.width = canvasWidth;
+            canvas.height = currentY + padding - (textLines[textLines.length - 1].size * lineHeightBase) - 5;
+
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.textAlign = 'center';
+            currentY = padding;
+
+            textLines.forEach(line => {
+                ctx.font = `${line.weight || 'normal'} ${line.size}px ${fontName}`;
+                ctx.fillStyle = line.color || primaryColor;
+                ctx.textBaseline = 'top';
+                currentY += (line.yOffset || 0);
+                ctx.fillText(line.text, canvas.width / 2, currentY);
+                currentY += line.size * lineHeightBase;
+            });
+
+            try {
+                const image = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = image;
+                link.download = 'nothing_game_score_retro.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                console.error("Error generating image:", e);
+                alert("ERROR: COULD NOT GENERATE SCORE IMAGE.");
+            }
+        }
+
+        // --- Initial Setup ---
+        window.addEventListener('keydown', handleKeyPress);
+        retryButton.addEventListener('click', resetGame);
+        shareScoreButton.addEventListener('click', generateScoreImage);
+
+        setupTickerText(); // Initialize the CA ticker
+        displayCurrentHighScore();
+        resetGame(); // Ensure initial state
+    </script>
+
+</body>
+
+</html>
